@@ -12,13 +12,16 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 from clipper.video import Segment
+from clipper.db import register_clip
+
 
 class ClipExporter:
     def __init__(self, output_dir: str, buffer_dir: str = "buffer",
-                 max_clips: int = 50, max_concurrency: int = 1):
+                 max_clips: int = 50, max_concurrency: int = 1, db_path: str = "clips.db"):
         self.output_dir = output_dir
         self.buffer_dir = buffer_dir
         self.max_clips = max_clips
+        self.db_path = db_path
         self._executor = ThreadPoolExecutor(max_workers=max_concurrency)
         self._queue = asyncio.Queue()
         self._running = True
@@ -93,6 +96,10 @@ class ClipExporter:
         meta_path = os.path.join(self.output_dir, f"clip_{stamp}_{self._count:03d}.json")
         with open(meta_path, "w") as f:
             json.dump(meta, f, indent=2)
+        
+        # Register clip in database for Instagram upload
+        register_clip(self.db_path, out_path, meta_path)
+        
         return out_path
 
     def rotate(self):

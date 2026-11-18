@@ -60,26 +60,44 @@ def init_db(db_path: str) -> sqlite3.Connection:
     return conn
 
 
-def register_clip(conn: sqlite3.Connection, file_path: str, meta_path: str) -> int:
+def register_clip(conn_or_path, file_path: str, meta_path: str) -> int:
     """Register a new clip in the database.
     
     Uses INSERT OR IGNORE for idempotency on the unique file_path constraint.
     Returns the clip_id (lastrowid for new inserts, existing id for duplicates).
+    
+    Args:
+        conn_or_path: Either a sqlite3.Connection or a database path string
+        file_path: Path to the video file
+        meta_path: Path to the metadata JSON file
     """
-    cursor = conn.execute(
-        "INSERT OR IGNORE INTO clips (file_path, meta_path) VALUES (?, ?)",
-        (file_path, meta_path)
-    )
-    conn.commit()
+    # Handle both connection and path
+    if isinstance(conn_or_path, str):
+        # Create temporary connection
+        conn = init_db(conn_or_path)
+        close_after = True
+    else:
+        conn = conn_or_path
+        close_after = False
     
-    if cursor.lastrowid:
-        return cursor.lastrowid
-    
-    # If it was a duplicate, fetch the existing id
-    row = conn.execute(
-        "SELECT id FROM clips WHERE file_path = ?", (file_path,)
-    ).fetchone()
-    return row[0] if row else 0
+    try:
+        cursor = conn.execute(
+            "INSERT OR IGNORE INTO clips (file_path, meta_path) VALUES (?, ?)",
+            (file_path, meta_path)
+        )
+        conn.commit()
+        
+        if cursor.lastrowid:
+            return cursor.lastrowid
+        
+        # If it was a duplicate, fetch the existing id
+        row = conn.execute(
+            "SELECT id FROM clips WHERE file_path = ?", (file_path,)
+        ).fetchone()
+        return row[0] if row else 0
+    finally:
+        if close_after:
+            conn.close()
 
 
 def get_pending(conn: sqlite3.Connection, limit: int = 25) -> list[ClipRow]:
