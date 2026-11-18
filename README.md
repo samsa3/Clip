@@ -106,3 +106,40 @@ ToS restricts automated capture and redistribution; streamers may opt out
 of clipping. Use responsibly and honor streamer requests. YouTube chat is
 best-effort (polling, weaker timestamps) and isolated in
 `clipper/chat/youtube.py`.
+
+## Instagram Auto-Upload
+
+Clips are automatically uploaded to Instagram Reels via a background daemon.
+
+### Setup
+
+1. Switch Instagram to Creator account (free, in-app)
+2. Copy `config.yaml.example` -> `config.yaml`, fill `instagram.username`
+3. Create `.env` with `IG_PASSWORD=your_password`
+4. Run once for initial login (handles 2FA):
+   ```bash
+   .venv\Scripts\python -m clipper.upload_daemon --login-only
+   ```
+5. Start daemon:
+   ```bash
+   .venv\Scripts\python -m clipper.upload_daemon
+   ```
+   Or as systemd service on Linux (see `DEPLOY.md`)
+
+### Config
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `instagram.username` | *required* | Creator account handle |
+| `instagram.session_file` | `session.json` | Persisted login session |
+| `instagram.db_path` | `clips.db` | SQLite database |
+| `instagram.caption_template` | *see config.py* | Jinja-like template |
+| `instagram.fallback_hashtags` | `["twitch", "clips", ...]` | Used when chat has no tags |
+| `instagram.max_hashtags` | `30` | Instagram limit |
+| `instagram.poll_interval_seconds` | `30` | Daemon poll interval |
+
+### Rate Limits
+
+- 1 upload/minute (burst)
+- 25 uploads/day (Instagram limit)
+- Daemon enforces both; resets at midnight UTC

@@ -1,0 +1,28 @@
+# Clipper config — copy to config.yaml and fill in.
+# CLI flags override this file, which overrides defaults in clipper/config.py.
+
+# --- Clipper core ---
+buffer_seconds: 60
+segment_seconds: 5
+pre_roll: 10
+post_roll: 20
+threshold: 3.0
+sustained_min: 8
+fire_score: 55
+debounce_seconds: 45
+quality: best          # best | 720p | 480p
+no_encode: false
+output_dir: clips
+max_clips: 50
+
+# --- Instagram auto-upload (daemon) ---
+# Password comes from environment (IG_PASSWORD) or a secrets file —
+# do NOT put it in this file.
+instagram:
+  username: "your_creator_handle"
+  session_file: session.json
+  db_path: clips.db
+  caption_template: "{top_phrase} 🔥 score: {score:.0f} | {chat_sample}\n\n{hashtags}"
+  fallback_hashtags: ["twitch", "clips", "gaming", "reels", "viral"]
+  max_hashtags: 30
+  poll_interval_seconds: 30
