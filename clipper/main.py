@@ -4,6 +4,7 @@ import sys
 from clipper.config import Config
 from clipper.url_resolver import resolve
 from clipper.video import VideoBuffer
+from clipper.detect import SpikeDetector
 
 async def main():
     parser = argparse.ArgumentParser()
@@ -32,10 +33,19 @@ async def main():
     print("Starting video pipeline...")
     await video.start()
 
+    detector = SpikeDetector(
+        threshold=config.threshold,
+        sustained_min=config.sustained_min,
+        fire_score=config.fire_score,
+        debounce_seconds=config.debounce_seconds,
+        lexicon=config.reaction_lexicon,
+        on_spike=lambda info: print(f"SPIKE! score={info[\"score\"]:.1f} burst={info[\"burst\"]} sim={info[\"similarity\"]:.2f} emote={info[\"emote_density\"]:.2f} cue={info[\"cue_density\"]:.2f} phrase={info[\"top_phrase\"]!r}")
+    )
+
     async def log_chat():
         if chat:
             async for msg in chat.messages():
-                print(f"[{msg.user}]: {msg.text}")
+                detector.on_message(msg)
 
     chat_task = asyncio.create_task(log_chat())
 

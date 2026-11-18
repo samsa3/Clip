@@ -12,7 +12,7 @@ class TwitchChat(ChatSource):
         self.queue = asyncio.Queue()
 
     async def connect(self, channel: str):
-        url = "wss://irc.chat.twitch.tv:443"
+        url = "wss://irc-ws.chat.twitch.tv:443"
         self.ws = await websockets.connect(url)
         await self.ws.send("CAP REQ :twitch.tv/tags")
         await self.ws.send("PASS SCHMOOPIE")
