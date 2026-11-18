@@ -1,0 +1,31 @@
+[Unit]
+Description=Clipper Instagram Upload Daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=clipper
+Group=clipper
+WorkingDirectory=/opt/clipper
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/clipper/.venv/bin/python -m clipper.upload_daemon
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/clipper/clips /opt/clipper/logs
+CapabilityBoundingSet=
+
+# Resource limits (Oracle Free Tier: 4 OCPU, 24 GB RAM)
+MemoryMax=4G
+CPUQuota=200%
+
+[Install]
+WantedBy=multi-user.target

@@ -5,3 +5,5 @@ pyyaml
 pytest
 pytest-asyncio
 anyio
+instagrapi
+ffmpeg-python
