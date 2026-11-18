@@ -1,0 +1,7 @@
+streamlink
+websockets
+aiohttp
+pyyaml
+pytest
+pytest-asyncio
+anyio
