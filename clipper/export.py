@@ -38,6 +38,7 @@ class ClipExporter:
             if not segments:
                 continue
             await self._export(spike_info, segments)
+            self.rotate()
             self._queue.task_done()
 
     async def _export(self, spike_info, segments):
