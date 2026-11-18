@@ -117,6 +117,7 @@ class SpikeDetector:
         t = msg.timestamp
         self._prune(t)
         self._msgs.append((t, msg.user, msg.text))
+        self.fired = False  # per-message latch; set True only if this message fires
 
         # sample burst per 5s bucket for the baseline
         bucket = int(t / BURST_WINDOW)

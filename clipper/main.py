@@ -1,10 +1,12 @@
 import asyncio
 import argparse
 import sys
+import os
 from clipper.config import Config
 from clipper.url_resolver import resolve
 from clipper.video import VideoBuffer
 from clipper.detect import SpikeDetector
+from clipper.export import ClipExporter
 
 async def main():
     parser = argparse.ArgumentParser()
@@ -32,6 +34,13 @@ async def main():
     video = VideoBuffer(stream_url, config=config)
     print("Starting video pipeline...")
     await video.start()
+    watch_task = asyncio.create_task(video.watch_segments())
+
+    exporter = ClipExporter(
+        output_dir=config.output_dir,
+        buffer_dir=video.buffer_dir,
+        max_clips=config.max_clips,
+    )
 
     detector = SpikeDetector(
         threshold=config.threshold,
@@ -39,7 +48,10 @@ async def main():
         fire_score=config.fire_score,
         debounce_seconds=config.debounce_seconds,
         lexicon=config.reaction_lexicon,
-        on_spike=lambda info: print(f"SPIKE! score={info[\"score\"]:.1f} burst={info[\"burst\"]} sim={info[\"similarity\"]:.2f} emote={info[\"emote_density\"]:.2f} cue={info[\"cue_density\"]:.2f} phrase={info[\"top_phrase\"]!r}")
+        on_spike=lambda info: (
+            print(f"SPIKE! score={info['score']:.1f} burst={info['burst']} sim={info['similarity']:.2f} emote={info['emote_density']:.2f} cue={info['cue_density']:.2f} phrase={info['top_phrase']!r}"),
+            exporter.queue(info, video.ring.select(info["time"])),
+        ),
     )
 
     async def log_chat():
@@ -48,6 +60,7 @@ async def main():
                 detector.on_message(msg)
 
     chat_task = asyncio.create_task(log_chat())
+    export_task = asyncio.create_task(exporter.run())
 
     try:
         while True:
@@ -57,9 +70,12 @@ async def main():
     finally:
         print("Stopping...")
         chat_task.cancel()
+        watch_task.cancel()
+        export_task.cancel()
         if chat:
             await chat.close()
         await video.stop()
+        await exporter.stop()
 
 if __name__ == "__main__":
     try:

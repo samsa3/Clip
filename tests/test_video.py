@@ -17,14 +17,14 @@ async def test_buffer_creation():
         shutil.rmtree("buffer_test")
 
 def test_ring_capacity_and_wrap():
-    ring = SegmentRing(segment_seconds=5)
+    ring = SegmentRing(segment_seconds=5, buffer_dir="buffer_test")
     for i in range(14):
         ring.add(i, start_wall=i * 5, end_wall=i * 5 + 5)
     assert len(ring.entries) == 12
     assert ring.entries[0].segment_id == 2
 
 def test_ring_selects_covering_segments():
-    ring = SegmentRing(segment_seconds=5, pre_roll=10, post_roll=20)
+    ring = SegmentRing(segment_seconds=5, pre_roll=10, post_roll=20, buffer_dir="buffer_test")
     for i in range(12):
         ring.add(i, start_wall=i * 5, end_wall=i * 5 + 5)
     selected = ring.select(spike_wall=50)
@@ -32,5 +32,5 @@ def test_ring_selects_covering_segments():
     assert selected[-1].segment_id == 11
 
 def test_ring_empty():
-    ring = SegmentRing(segment_seconds=5, pre_roll=10, post_roll=20)
+    ring = SegmentRing(segment_seconds=5, pre_roll=10, post_roll=20, buffer_dir="buffer_test")
     assert ring.select(spike_wall=100) == []
