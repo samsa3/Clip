@@ -5,3 +5,4 @@ buffer/
 clips/
 .pytest_cache/
 *.log
+.worktrees/
