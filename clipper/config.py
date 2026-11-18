@@ -21,6 +21,16 @@ class Config:
         "pog", "poggers", "letsgo", "clipit", "clip it", "lul", "kek",
         "kekw", "w", "insane", "clutch", "unreal", "pogu"
     ])
+    
+    # Instagram configuration
+    instagram_username: str = ""
+    instagram_password: str = ""
+    instagram_session_file: str = "session.json"
+    instagram_db_path: str = "clips.db"
+    instagram_caption_template: str = "{top_phrase} 🔥 score: {score:.0f} | {chat_sample}\n\n{hashtags}"
+    instagram_fallback_hashtags: list[str] = field(default_factory=lambda: ["twitch", "clips", "gaming", "reels", "viral"])
+    instagram_max_hashtags: int = 30
+    instagram_poll_interval_seconds: int = 30
 
     @classmethod
     def load(cls, path: str = None) -> 'Config':
@@ -29,15 +39,23 @@ class Config:
             with open(path, 'r') as f:
                 data = yaml.safe_load(f)
                 if data:
+                    # Handle top-level keys
                     for key, value in data.items():
                         if hasattr(config, key):
                             setattr(config, key, value)
+                    # Handle nested instagram config
+                    if "instagram" in data:
+                        ig_config = data["instagram"]
+                        for key, value in ig_config.items():
+                            attr_name = f"instagram_{key}"
+                            if hasattr(config, attr_name):
+                                setattr(config, attr_name, value)
         return config
 
     @classmethod
     def from_args(cls, argv=None) -> 'Config':
         parser = argparse.ArgumentParser(description="Live stream auto-clipper")
-        parser.add_argument("url", help="Stream URL")
+        parser.add_argument("url", nargs="?", help="Stream URL (optional for upload-daemon)")
         parser.add_argument("--config", help="Config file path")
         parser.add_argument("--buffer", type=int, help="Buffer seconds")
         parser.add_argument("--segment", type=int, help="Segment seconds")
@@ -51,6 +69,14 @@ class Config:
         parser.add_argument("--no-encode", action="store_true", help="Copy without re-encode")
         parser.add_argument("--output-dir", help="Output directory")
         parser.add_argument("--max-clips", type=int, help="Max clips to keep")
+        
+        # Instagram CLI flags
+        parser.add_argument("--ig-username", help="Instagram username")
+        parser.add_argument("--ig-password", help="Instagram password")
+        parser.add_argument("--ig-session", help="Instagram session file path")
+        parser.add_argument("--ig-db", help="Instagram database path")
+        parser.add_argument("--ig-poll-interval", type=int, help="Instagram poll interval seconds")
+        
         args = parser.parse_args(argv)
 
         config = cls.load(args.config)
@@ -78,4 +104,17 @@ class Config:
             config.output_dir = args.output_dir
         if args.max_clips is not None:
             config.max_clips = args.max_clips
+        
+        # Instagram CLI args
+        if args.ig_username is not None:
+            config.instagram_username = args.ig_username
+        if args.ig_password is not None:
+            config.instagram_password = args.ig_password
+        if args.ig_session is not None:
+            config.instagram_session_file = args.ig_session
+        if args.ig_db is not None:
+            config.instagram_db_path = args.ig_db
+        if args.ig_poll_interval is not None:
+            config.instagram_poll_interval_seconds = args.ig_poll_interval
+        
         return config, args.url
